@@ -1,30 +1,50 @@
 const express = require('express');
-const cors = require('cors'); // Import CORS
+const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs');
+const { MongoClient } = require('mongodb');
+
+// MongoDB connection configuration
+const uri = 'mongodb+srv://adham830:<8302004>@usagetracker.dlt05.mongodb.net/?retryWrites=true&w=majority&appName=usagetracker'; // Replace with your MongoDB connection string
+const client = new MongoClient(uri);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // Enable CORS for all routes
+app.use(cors());
 app.use(bodyParser.json());
 
-// GET route to test in the browser
-app.get('/', (req, res) => {
-    res.send('Hello! The server is running.');
-});
+// Connect to MongoDB once and reuse the connection
+let db; // Global variable to hold the database connection
+client.connect()
+    .then(() => {
+        console.log('Connected to MongoDB');
+        db = client.db('usagetracker'); // Set the database after connection
+    })
+    .catch(err => {
+        console.error('Failed to connect to MongoDB:', err);
+    });
 
-// GET route for /track to respond with a simple message
-app.get('/track', (req, res) => {
-    res.send('Track endpoint is working. Please send a POST request.');
-});
-
-// POST route to track reads and writes
-app.post('/track', (req, res) => {
+app.post('/track', async (req, res) => {
     const { userId, action } = req.body;
-    const log = `${new Date().toISOString()} - User: ${userId}, Action: ${action}\n`;
-    fs.appendFileSync('usage.log', log);
-    res.status(200).send('Usage tracked');
+
+    if (!userId || !action) {
+        return res.status(400).json({ error: 'Missing userId or action' });
+    }
+
+    const log = {
+        userId: userId,
+        action: action,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        const collection = db.collection('usage_logs'); // Use the global db variable
+        await collection.insertOne(log);
+        res.status(200).send('Usage tracked');
+    } catch (error) {
+        console.error('Error saving to MongoDB:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.listen(PORT, () => {
