@@ -2,17 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
-require('dotenv').config(); // Load environment variables
+
+// MongoDB connection configuration
+const uri = 'mongodb+srv://adham830:8302004@usagetracker.dlt05.mongodb.net/usagetracker?retryWrites=true&w=majority'; // Replace with your MongoDB connection string
+const client = new MongoClient(uri);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-
-// MongoDB connection configuration
-const uri = process.env.MONGODB_URI; // Use the environment variable for the connection string
-const client = new MongoClient(uri);
 
 // Connect to MongoDB once and reuse the connection
 let db; // Global variable to hold the database connection
