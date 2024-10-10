@@ -1,33 +1,33 @@
 const express = require('express');
-const cors = require('cors'); // Import CORS
+const cors = require('cors');
 const bodyParser = require('body-parser');
-const { MongoClient } = require('mongodb'); // Import MongoDB client
+const { MongoClient } = require('mongodb');
+require('dotenv').config(); // Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // Enable CORS for all routes
-app.use(bodyParser.json()); // Parse incoming JSON data
+app.use(cors());
+app.use(bodyParser.json());
 
 // MongoDB connection configuration
-const uri = 'mongodb+srv://adham830:<8302004>@usagetracker.dlt05.mongodb.net/?retryWrites=true&w=majority&appName=usagetracker'; // Replace with your MongoDB connection string
+const uri = process.env.MONGODB_URI; // Use the environment variable for the connection string
 const client = new MongoClient(uri);
 
-// GET route to test in the browser
-app.get('/', (req, res) => {
-    res.send('Hello! The server is running.');
-});
+// Connect to MongoDB once and reuse the connection
+let db; // Global variable to hold the database connection
+client.connect()
+    .then(() => {
+        console.log('Connected to MongoDB');
+        db = client.db('usagetracker'); // Set the database after connection
+    })
+    .catch(err => {
+        console.error('Failed to connect to MongoDB:', err);
+    });
 
-// GET route for /track to respond with a simple message
-app.get('/track', (req, res) => {
-    res.send('Track endpoint is working. Please send a POST request.');
-});
-
-// POST route to track reads and writes
 app.post('/track', async (req, res) => {
     const { userId, action } = req.body;
 
-    // Check if both userId and action are provided
     if (!userId || !action) {
         return res.status(400).json({ error: 'Missing userId or action' });
     }
@@ -39,22 +39,15 @@ app.post('/track', async (req, res) => {
     };
 
     try {
-        await client.connect(); // Connect to MongoDB
-        const database = client.db('usagetracker'); // Replace with your database name
-        const collection = database.collection('usage_logs'); // Collection for logging
-
-        // Insert log data into MongoDB
+        const collection = db.collection('usage_logs'); // Use the global db variable
         await collection.insertOne(log);
         res.status(200).send('Usage tracked');
     } catch (error) {
         console.error('Error saving to MongoDB:', error);
         res.status(500).json({ error: 'Internal server error' });
-    } finally {
-        await client.close(); // Close the connection
     }
 });
 
-// Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
