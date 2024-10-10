@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
 
 // MongoDB connection configuration
-const uri = 'mongodb+srv://adham830:8302004@usagetracker.dlt05.mongodb.net/usagetracker?retryWrites=true&w=majority'; // Replace with your MongoDB connection string
+const uri = 'mongodb+srv://adham830:<8302004>@usagetracker.dlt05.mongodb.net/?retryWrites=true&w=majority&appName=usagetracker'; // Replace with your MongoDB connection string
 const client = new MongoClient(uri);
 
 const app = express();
